@@ -1,3 +1,4 @@
+import asyncio
 import ipaddress
 from typing import List, Optional, Tuple
 
@@ -23,16 +24,15 @@ async def check_rbls(
 ) -> Tuple[bool, List[str]]:
     """Query reputation blacklists (Spamhaus Zen, Barracuda, SpamCop) for an IP address.
 
+    Queries all RBLs concurrently via asyncio.gather.
     Returns a tuple of (is_listed, list_of_rbl_names).
     Private, loopback, empty or invalid IPv4 addresses are safely skipped.
+    Filters out Spamhaus open resolver rejection codes (127.255.255.x).
     """
     if not ip:
         return False, []
 
     clean_ip = ip.strip()
-    if clean_ip.startswith(("10.", "172.", "192.168.", "127.")):
-        return False, []
-
     try:
         ip_obj = ipaddress.ip_address(clean_ip)
         if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_reserved or ip_obj.version != 4:
@@ -45,15 +45,23 @@ async def check_rbls(
         resolver.lifetime = settings.NETWORK_TIMEOUT_SECONDS
 
     rev_ip = reverse_ip_for_rbl(clean_ip)
-    listings: List[str] = []
 
-    for rbl in PUBLIC_RBLS:
+    async def _query_single_rbl(rbl: str) -> Optional[str]:
         query_host = f"{rev_ip}.{rbl}"
         try:
             answers = await resolver.resolve(query_host, "A")
-            if answers:
-                listings.append(rbl)
+            for r in answers:
+                ip_ans = str(r).strip()
+                # Ignore Spamhaus rejection / open resolver return codes (127.255.255.x)
+                if ip_ans.startswith("127.255.255."):
+                    continue
+                if ip_ans.startswith("127."):
+                    return rbl
         except Exception:
-            continue
+            pass
+        return None
+
+    results = await asyncio.gather(*[_query_single_rbl(rbl) for rbl in PUBLIC_RBLS])
+    listings = [r for r in results if r is not None]
 
     return (len(listings) > 0, listings)

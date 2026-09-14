@@ -66,8 +66,34 @@ async def test_check_rbls_private_ip():
     assert not is_listed
     assert listings == []
 
+    is_listed, listings = await check_rbls("172.31.255.254")
+    assert not is_listed
+    assert listings == []
+
     is_listed, listings = await check_rbls("")
     assert not is_listed
+    assert listings == []
+
+
+@pytest.mark.asyncio
+async def test_check_rbls_public_172_ip():
+    # 172.217.16.1 is a public Google IP, must NOT be skipped
+    mock_resolver = AsyncMock(spec=dns.asyncresolver.Resolver)
+    mock_resolver.resolve = AsyncMock(return_value=["127.0.0.2"])
+
+    is_listed, listings = await check_rbls("172.217.16.1", resolver=mock_resolver)
+    assert is_listed is True
+    assert len(listings) == 3
+
+
+@pytest.mark.asyncio
+async def test_check_rbls_spamhaus_open_resolver_rejection():
+    # 127.255.255.254 / 255 indicates Spamhaus query refusal, not a blacklist hit
+    mock_resolver = AsyncMock(spec=dns.asyncresolver.Resolver)
+    mock_resolver.resolve = AsyncMock(return_value=["127.255.255.254"])
+
+    is_listed, listings = await check_rbls("185.220.101.5", resolver=mock_resolver)
+    assert is_listed is False
     assert listings == []
 
 
@@ -156,6 +182,34 @@ async def test_lookup_geoip_private_ip():
     assert res["org"] == "Privado"
     assert res["asn"] == "N/A"
     mock_client.get.assert_not_called()
+
+    # RFC 1918 172.16.x.x
+    res_172 = await lookup_geoip("172.16.0.1", mock_client)
+    assert res_172["country"] == "Local"
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_lookup_geoip_public_172_ip():
+    # Public 172.217.16.1 (Google) should query ip-api, not be treated as Local
+    mock_client = AsyncMock(spec=httpx.AsyncClient)
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "status": "success",
+        "country": "United States",
+        "city": "Mountain View",
+        "lat": 37.4056,
+        "lon": -122.0775,
+        "org": "Google LLC",
+        "as": "AS15169 Google LLC",
+    }
+    mock_client.get = AsyncMock(return_value=mock_resp)
+
+    res = await lookup_geoip("172.217.16.1", mock_client)
+    assert res["country"] == "United States"
+    assert res["org"] == "Google LLC"
+    mock_client.get.assert_called_once()
 
 
 @pytest.mark.asyncio

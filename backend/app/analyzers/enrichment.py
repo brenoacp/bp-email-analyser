@@ -53,16 +53,6 @@ async def lookup_geoip(ip: str, client: httpx.AsyncClient) -> Dict[str, Any]:
         return {}
 
     clean_ip = ip.strip()
-    if clean_ip.startswith(("10.", "172.", "192.168.", "127.")):
-        return {
-            "country": "Local",
-            "city": "Rede Interna",
-            "lat": 0.0,
-            "lon": 0.0,
-            "org": "Privado",
-            "asn": "N/A",
-        }
-
     try:
         ip_obj = ipaddress.ip_address(clean_ip)
         if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_reserved:
@@ -75,7 +65,7 @@ async def lookup_geoip(ip: str, client: httpx.AsyncClient) -> Dict[str, Any]:
                 "asn": "N/A",
             }
     except ValueError:
-        pass
+        return {}
 
     try:
         url = f"http://ip-api.com/json/{clean_ip}?fields=status,country,city,lat,lon,org,as"
