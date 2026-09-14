@@ -10,10 +10,35 @@ import dns.reversename
 from app.core.config import settings
 from app.core.schemas import HopInfo
 
-IP_REGEX = re.compile(
+BRACKETED_IP_REGEX = re.compile(r"\[(?:IPv6:)?([a-fA-F0-9:.]+)\]", re.IGNORECASE)
+IPV4_REGEX = re.compile(
     r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b"
 )
-IPV6_REGEX = re.compile(r"(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}")
+
+
+def extract_ip_from_header(header_str: str) -> Optional[str]:
+    """Extract an IPv4 or IPv6 address from a Received header string.
+
+    Prioritizes bracketed/tagged MTA IP patterns (e.g. [1.2.3.4], [IPv6:...], [2001:db8::1]),
+    falling back to unbracketed IPv4 regex matches, validated with ipaddress.ip_address.
+    """
+    for match in BRACKETED_IP_REGEX.finditer(header_str):
+        candidate = match.group(1).strip()
+        if "." in candidate or ":" in candidate:
+            try:
+                ip_obj = ipaddress.ip_address(candidate)
+                return str(ip_obj)
+            except ValueError:
+                pass
+
+    for candidate in IPV4_REGEX.findall(header_str):
+        try:
+            ip_obj = ipaddress.ip_address(candidate)
+            return str(ip_obj)
+        except ValueError:
+            pass
+
+    return None
 
 
 def is_ip_private(ip_str: str) -> bool:
@@ -33,6 +58,7 @@ async def verify_fcrdns(
     """Verify Forward-Confirmed reverse DNS (FCrDNS) for an IP address.
 
     Performs PTR reverse lookup followed by forward A/AAAA confirmation.
+    Uses canonical IP parsing to prevent false mismatches with compressed/uncompressed IPv6.
     """
     if isinstance(resolver, str):
         claimed_host = resolver
@@ -50,11 +76,18 @@ async def verify_fcrdns(
         ptr_answers = await resolver.resolve(rev_name, "PTR")
         ptr_hostname = str(ptr_answers[0].target).rstrip(".")
 
-        # Forward check (A/AAAA)
+        # Forward check (A/AAAA) with canonical ipaddress comparison
         qtype = "AAAA" if ":" in ip else "A"
+        target_ip_obj = ipaddress.ip_address(ip)
         a_answers = await resolver.resolve(ptr_hostname, qtype)
-        ips_resolved = [str(rdata) for rdata in a_answers]
-        if ip in ips_resolved:
+        ips_resolved = []
+        for rdata in a_answers:
+            try:
+                ips_resolved.append(ipaddress.ip_address(str(rdata).strip()))
+            except ValueError:
+                continue
+
+        if target_ip_obj in ips_resolved:
             return (True, ptr_hostname)
         return (False, ptr_hostname)
     except Exception:
@@ -83,10 +116,7 @@ async def parse_hops(
         header_str = str(header_val)
 
         # Extract IP
-        found_ips = IP_REGEX.findall(header_str)
-        if not found_ips:
-            found_ips = IPV6_REGEX.findall(header_str)
-        extracted_ip = found_ips[0] if found_ips else None
+        extracted_ip = extract_ip_from_header(header_str)
 
         # Extract from / by
         from_match = re.search(r"from\s+([^\s;()]+)", header_str, re.IGNORECASE)

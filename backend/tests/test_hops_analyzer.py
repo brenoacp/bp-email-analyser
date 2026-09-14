@@ -170,3 +170,37 @@ Subject: Test
     assert len(hops) == 1
     assert hops[0].timestamp == "This is not a valid date"
     assert hops[0].delay_seconds == 0
+
+
+@pytest.mark.asyncio
+async def test_parse_hops_compressed_and_tagged_ipv6():
+    raw = """Received: from mail.google.com (mail.google.com [IPv6:2607:f8b0:4005:805::200e])
+    by mx.destination.com (Postfix) with ESMTPS id 4XhG0l5v
+    for <user@destination.com>; Mon, 14 Sep 2026 14:20:05 -0300
+Received: from internal-relay.corp ([2001:db8::1])
+    by mail.google.com with ESMTPS; Mon, 14 Sep 2026 14:20:00 -0300
+From: test@example.com
+Subject: Test IPv6
+"""
+    msg = message_from_string(raw, policy=default)
+    hops = await parse_hops(msg, perform_dns=False)
+    assert len(hops) == 2
+    assert hops[0].ip == "2001:db8::1"
+    assert hops[1].ip == "2607:f8b0:4005:805::200e"
+
+
+@pytest.mark.asyncio
+async def test_verify_fcrdns_ipv6_compressed_vs_uncompressed_canonical_match():
+    mock_resolver = MagicMock()
+    ptr_answer = MagicMock()
+    ptr_answer.target = "mail.ipv6.example.com."
+    # Resolver returns uncompressed IPv6, while caller queried with compressed IPv6
+    mock_resolver.resolve = AsyncMock(side_effect=[
+        [ptr_answer],
+        ["2607:f8b0:4005:0805:0000:0000:0000:200e"]
+    ])
+
+    passed, hostname = await verify_fcrdns("2607:f8b0:4005:805::200e", resolver=mock_resolver)
+    assert passed is True
+    assert hostname == "mail.ipv6.example.com"
+
