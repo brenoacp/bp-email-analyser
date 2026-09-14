@@ -8,6 +8,9 @@ interface HopsMapProps {
   hops: HopInfo[];
 }
 
+const escapeHtml = (str: string): string =>
+  str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m));
+
 export const HopsMap: React.FC<HopsMapProps> = ({ hops }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletInstance = useRef<L.Map | null>(null);
@@ -37,6 +40,14 @@ export const HopsMap: React.FC<HopsMapProps> = ({ hops }) => {
         const pt: [number, number] = [h.latitude, h.longitude];
         latLngs.push(pt);
         const markerColor = h.fcrdns_passed ? '#10b981' : h.fcrdns_passed === false ? '#f43f5e' : '#38bdf8';
+        const safeIp = h.ip ? escapeHtml(h.ip) : 'N/A';
+        const safeCity = h.city ? escapeHtml(h.city) : '';
+        const safeCountry = h.country ? escapeHtml(h.country) : '';
+        const location = safeCity && safeCountry ? `${safeCity}, ${safeCountry}` : safeCity || safeCountry || 'N/D';
+        const rawOrg = h.org || h.asn || '';
+        const safeOrg = rawOrg ? escapeHtml(rawOrg) : 'N/D';
+        const fcrdnsLabel = h.fcrdns_passed ? 'Válido' : h.fcrdns_passed === false ? 'Inválido' : 'N/A';
+
         L.circleMarker(pt, {
           radius: 7,
           color: markerColor,
@@ -47,10 +58,10 @@ export const HopsMap: React.FC<HopsMapProps> = ({ hops }) => {
           .bindPopup(
             `<div style="font-family: sans-serif; font-size: 12px; color: #0f172a; line-height: 1.4;">
               <b style="color: #0284c7;">Salto #${h.order}</b><br/>
-              <b>IP:</b> ${h.ip || 'N/A'}<br/>
-              <b>Local:</b> ${h.city || ''}${h.city && h.country ? ', ' : ''}${h.country || 'N/D'}<br/>
-              <b>Org:</b> ${h.org || h.asn || 'N/D'}<br/>
-              <b>FCrDNS:</b> ${h.fcrdns_passed ? 'Válido' : h.fcrdns_passed === false ? 'Inválido' : 'N/A'}
+              <b>IP:</b> ${safeIp}<br/>
+              <b>Local:</b> ${location}<br/>
+              <b>Org:</b> ${safeOrg}<br/>
+              <b>FCrDNS:</b> ${fcrdnsLabel}
             </div>`
           )
           .addTo(map);

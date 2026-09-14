@@ -76,6 +76,18 @@ def test_analyze_empty_header():
     assert resp.json()["detail"] == "Cabeçalho vazio fornecido"
 
 
+def test_analyze_payload_too_large():
+    large_header = "Received: from mail.example.com\n" + "X-Custom: " + ("A" * 1_000_000)
+    payload = {
+        "raw_header": large_header,
+        "options": {"live_dns": False, "rdap_lookup": False, "rbl_check": False},
+    }
+    resp = client.post("/api/analyze", json=payload)
+    assert resp.status_code == 413
+    assert "Payload Too Large" in resp.json()["detail"]
+    assert "1MB" in resp.json()["detail"]
+
+
 def test_export_pdf_endpoint():
     payload = {
         "raw_header": SAMPLE_PHISHING_HEADER,
@@ -134,6 +146,38 @@ async def test_analyze_with_enrichment_flow():
         assert data["origin_ip"]["rbl_listed"] is True
         assert "zen.spamhaus.org" in data["origin_ip"]["rbl_listings"]
         assert data["domain_info"]["age_days"] == 13
+
+
+@pytest.mark.asyncio
+async def test_analyze_parallel_geoip_enrichment():
+    multi_hop_header = (
+        "Received: from hop3.net (hop3.net [93.184.216.34])\n"
+        "    by mx.destination.com (Postfix) with ESMTPS id ABC3; Mon, 14 Sep 2026 14:20:00 -0300\n"
+        "Received: from hop2.net (hop2.net [185.220.101.5])\n"
+        "    by hop3.net with ESMTPS id ABC2; Mon, 14 Sep 2026 14:19:00 -0300\n"
+        "Received: from hop1.net (hop1.net [209.85.208.65])\n"
+        "    by hop2.net with ESMTPS id ABC1; Mon, 14 Sep 2026 14:18:00 -0300\n"
+        "From: sender@example.com\n"
+        "Subject: Test Multi Hop\n"
+    )
+    resolved_ips = []
+
+    async def mock_geo_call(ip, http_client):
+        resolved_ips.append(ip)
+        return {"country": f"Country-{ip}", "city": "City", "lat": 10.0, "lon": 20.0}
+
+    with patch("app.api.routes.lookup_geoip", side_effect=mock_geo_call):
+        payload = {
+            "raw_header": multi_hop_header,
+            "options": {"live_dns": False, "rdap_lookup": True, "rbl_check": False},
+        }
+        resp = client.post("/api/analyze", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["hops"]) == 3
+        assert set(resolved_ips) == {"209.85.208.65", "185.220.101.5", "93.184.216.34"}
+        for h in data["hops"]:
+            assert h["country"] == f"Country-{h['ip']}"
 
 
 def test_analyze_default_options_omitted():

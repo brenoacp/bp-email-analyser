@@ -244,3 +244,46 @@ async def test_analyze_authentication_positional_resolver():
     assert auth.spf_record == "v=spf1 -all"
     assert auth.dmarc_record == "v=DMARC1; p=none;"
 
+
+def test_dkim_fallback_header_d_and_header_i():
+    email_d = """From: user@corp.org
+Authentication-Results: mx.test.com; dkim=pass header.d=corp.org header.s=sel2
+Subject: Test DKIM d
+"""
+    msg_d = message_from_string(email_d, policy=default)
+    auth_d = extract_header_auth_results(msg_d)
+    assert auth_d.dkim_verdict == "pass"
+    assert auth_d.dkim_domain == "corp.org"
+    assert auth_d.dkim_selector == "sel2"
+
+    email_i = """From: user@corp.org
+Authentication-Results: mx.test.com; dkim=pass header.i=user.name@corp.org header.s=sel3
+Subject: Test DKIM i
+"""
+    msg_i = message_from_string(email_i, policy=default)
+    auth_i = extract_header_auth_results(msg_i)
+    assert auth_i.dkim_verdict == "pass"
+    assert auth_i.dkim_domain == "corp.org"
+    assert auth_i.dkim_selector == "sel3"
+
+
+def test_dmarc_policy_scoped_ignore_stray_p():
+    email_text = """From: user@corp.org
+Authentication-Results: mx.test.com; spf=pass (mx.test.com: domain p=bogus designates 1.2.3.4); dmarc=pass (p=reject sp=reject)
+Subject: Test DMARC Scoping
+"""
+    msg = message_from_string(email_text, policy=default)
+    auth = extract_header_auth_results(msg)
+    assert auth.dmarc_verdict == "pass"
+    assert auth.dmarc_policy == "reject"
+
+    email_text_after = """From: user@corp.org
+Authentication-Results: mx.test.com; dmarc=pass; spf=neutral (p=stray_after)
+Subject: Test DMARC Scoping After
+"""
+    msg_after = message_from_string(email_text_after, policy=default)
+    auth_after = extract_header_auth_results(msg_after)
+    assert auth_after.dmarc_verdict == "pass"
+    assert auth_after.dmarc_policy is None
+
+

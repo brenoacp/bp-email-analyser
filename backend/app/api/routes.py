@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import time
 from email import message_from_string
@@ -14,6 +15,7 @@ from app.analyzers.hops_analyzer import is_ip_private, parse_hops
 from app.analyzers.identity_analyzer import analyze_identity
 from app.analyzers.rbl_analyzer import check_rbls
 from app.analyzers.seg_analyzer import analyze_seg_verdicts
+from app.core.config import settings
 from app.core.schemas import (
     DomainInfo,
     EmailAnalysisRequest,
@@ -63,6 +65,11 @@ async def get_sample(sample_id: str):
 async def process_email(request: EmailAnalysisRequest) -> EmailAnalysisResponse:
     start_time = time.perf_counter()
     raw_header = request.raw_header.strip()
+    if len(raw_header.encode("utf-8")) > settings.MAX_HEADER_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail="Payload Too Large: cabeçalho excede o limite máximo permitido de 1MB",
+        )
     if not raw_header:
         raise HTTPException(status_code=400, detail="Cabeçalho vazio fornecido")
 
@@ -103,9 +110,22 @@ async def process_email(request: EmailAnalysisRequest) -> EmailAnalysisResponse:
     domain_info = DomainInfo(domain=sender_domain or "unknown")
 
     async with httpx.AsyncClient() as http_client:
-        if origin_ip_str:
-            if request.options.rdap_lookup:
-                geo = await lookup_geoip(origin_ip_str, http_client)
+        if request.options.rdap_lookup:
+            # Gather unique public IPs from hops and origin IP
+            unique_ips = list(dict.fromkeys(h.ip for h in hops if h.ip and not h.is_private))
+            if origin_ip_str and origin_ip_str not in unique_ips:
+                unique_ips.append(origin_ip_str)
+
+            if unique_ips:
+                geo_results = await asyncio.gather(
+                    *(lookup_geoip(ip, http_client) for ip in unique_ips)
+                )
+                geo_cache = dict(zip(unique_ips, geo_results))
+            else:
+                geo_cache = {}
+
+            if origin_ip_str and origin_ip_str in geo_cache:
+                geo = geo_cache[origin_ip_str]
                 origin_ip_info.country = geo.get("country")
                 origin_ip_info.city = geo.get("city")
                 origin_ip_info.latitude = geo.get("lat")
@@ -113,21 +133,21 @@ async def process_email(request: EmailAnalysisRequest) -> EmailAnalysisResponse:
                 origin_ip_info.asn = geo.get("asn")
                 origin_ip_info.org = geo.get("org")
 
-                # Enrich hops coordinates
-                for h in hops:
-                    if h.ip and not h.is_private:
-                        h_geo = await lookup_geoip(h.ip, http_client)
-                        h.country = h_geo.get("country")
-                        h.city = h_geo.get("city")
-                        h.latitude = h_geo.get("lat")
-                        h.longitude = h_geo.get("lon")
-                        h.org = h_geo.get("org")
-                        h.asn = h_geo.get("asn")
+            # Map results back to hops
+            for h in hops:
+                if h.ip and not h.is_private and h.ip in geo_cache:
+                    h_geo = geo_cache[h.ip]
+                    h.country = h_geo.get("country")
+                    h.city = h_geo.get("city")
+                    h.latitude = h_geo.get("lat")
+                    h.longitude = h_geo.get("lon")
+                    h.org = h_geo.get("org")
+                    h.asn = h_geo.get("asn")
 
-            if request.options.rbl_check:
-                is_listed, listings = await check_rbls(origin_ip_str)
-                origin_ip_info.rbl_listed = is_listed
-                origin_ip_info.rbl_listings = listings
+        if origin_ip_str and request.options.rbl_check:
+            is_listed, listings = await check_rbls(origin_ip_str)
+            origin_ip_info.rbl_listed = is_listed
+            origin_ip_info.rbl_listings = listings
 
         if sender_domain and request.options.rdap_lookup:
             domain_info = await lookup_rdap_domain(sender_domain, http_client)

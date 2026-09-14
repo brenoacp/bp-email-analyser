@@ -60,19 +60,33 @@ def extract_header_auth_results(msg: EmailMessage) -> AuthStatus:
 
     # Fallback to Authentication-Results tags for DKIM domain/selector if missing
     if not status.dkim_domain:
-        i_match = re.search(r"header\.i=@?([^\s;]+)", auth_results, re.IGNORECASE)
-        if i_match:
-            status.dkim_domain = i_match.group(1).lstrip("@")
+        d_match = re.search(r"header\.d=([^\s;]+)", auth_results, re.IGNORECASE)
+        if d_match:
+            status.dkim_domain = d_match.group(1).strip('"')
+        else:
+            i_match = re.search(r"header\.i=@?([^\s;]+)", auth_results, re.IGNORECASE)
+            if i_match:
+                raw_domain = i_match.group(1).strip('"').lstrip("@")
+                if "@" in raw_domain:
+                    raw_domain = raw_domain.split("@")[-1]
+                status.dkim_domain = raw_domain
     if not status.dkim_selector:
         s_match = re.search(r"header\.s=([^\s;]+)", auth_results, re.IGNORECASE)
         if s_match:
-            status.dkim_selector = s_match.group(1)
+            status.dkim_selector = s_match.group(1).strip('"')
 
     # DMARC
-    dmarc_match = re.search(r"\bdmarc=(\w+)", auth_results, re.IGNORECASE)
+    dmarc_match = re.search(r"\bdmarc=([a-zA-Z0-9_-]+)", auth_results, re.IGNORECASE)
     if dmarc_match:
         status.dmarc_verdict = dmarc_match.group(1).lower()
-        pol_match = re.search(r"\bp=(\w+)", auth_results, re.IGNORECASE)
+        dmarc_clause = auth_results[dmarc_match.start():]
+        next_method = re.search(
+            r";\s*(?:spf|dkim|arc|iprev|auth|bimi)\s*=", dmarc_clause, re.IGNORECASE
+        )
+        if next_method:
+            dmarc_clause = dmarc_clause[:next_method.start()]
+
+        pol_match = re.search(r"\bp=([a-zA-Z]+)", dmarc_clause, re.IGNORECASE)
         if pol_match:
             status.dmarc_policy = pol_match.group(1).lower()
 

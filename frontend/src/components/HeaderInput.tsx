@@ -12,6 +12,7 @@ import {
   Globe,
   Database,
   Search,
+  Info,
 } from 'lucide-react';
 import { AnalysisOptions, SampleId } from '../types/email';
 
@@ -98,6 +99,7 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
     if (e.target.files && e.target.files.length > 0) {
       processFile(e.target.files[0]);
     }
+    e.target.value = '';
   };
 
   const handleOptionToggle = (key: keyof AnalysisOptions) => {
@@ -183,6 +185,14 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
           <span>{dragError}</span>
         </div>
       )}
+
+      {/* Supported file formats note */}
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-400">
+        <Info className="w-3.5 h-3.5 text-sky-400/80 shrink-0" />
+        <span>
+          Arquivos <span className="text-slate-300 font-mono">.eml</span> e cabeçalhos de texto são suportados nativamente. Arquivos <span className="text-slate-300 font-mono">.msg</span> devem ser exportados como <span className="text-slate-300 font-mono">.eml</span> ou colados como texto.
+        </span>
+      </div>
 
       {/* Sub-bar: stats and actions */}
       <div className="flex flex-wrap items-center justify-between gap-4 mt-3 text-xs text-slate-400">
