@@ -3,10 +3,10 @@ import hashlib
 import time
 from email import message_from_string
 from email.policy import default
-from typing import Dict
+from typing import Dict, Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 
 from app.analyzers.auth_analyzer import analyze_authentication
 from app.analyzers.client_analyzer import analyze_client_metadata
@@ -16,6 +16,7 @@ from app.analyzers.identity_analyzer import analyze_identity
 from app.analyzers.rbl_analyzer import check_rbls
 from app.analyzers.seg_analyzer import analyze_seg_verdicts
 from app.core.config import settings
+from app.core.logging import log_forensic_analysis
 from app.core.schemas import (
     DomainInfo,
     EmailAnalysisRequest,
@@ -62,7 +63,10 @@ async def get_sample(sample_id: str):
     return {"sample_id": sample_id, "raw_header": SAMPLES[sample_id]}
 
 
-async def process_email(request: EmailAnalysisRequest) -> EmailAnalysisResponse:
+async def process_email(
+    request: EmailAnalysisRequest,
+    http_req: Optional[Request] = None,
+) -> EmailAnalysisResponse:
     start_time = time.perf_counter()
     raw_header = request.raw_header.strip()
     if len(raw_header.encode("utf-8")) > settings.MAX_HEADER_SIZE_BYTES:
@@ -166,7 +170,7 @@ async def process_email(request: EmailAnalysisRequest) -> EmailAnalysisResponse:
         elapsed_ms=elapsed_ms,
     )
 
-    return EmailAnalysisResponse(
+    response = EmailAnalysisResponse(
         summary=summary,
         findings=findings,
         hops=hops,
@@ -179,15 +183,28 @@ async def process_email(request: EmailAnalysisRequest) -> EmailAnalysisResponse:
         raw_header_hash=header_hash,
     )
 
+    client_ip = http_req.client.host if (http_req and http_req.client) else None
+    user_agent = http_req.headers.get("user-agent") if http_req else None
+
+    log_forensic_analysis(
+        raw_header=request.raw_header,
+        analysis=response,
+        options=request.options,
+        client_ip=client_ip,
+        user_agent=user_agent,
+    )
+
+    return response
+
 
 @router.post("/analyze", response_model=EmailAnalysisResponse)
-async def analyze(request: EmailAnalysisRequest):
-    return await process_email(request)
+async def analyze(request: EmailAnalysisRequest, http_req: Request):
+    return await process_email(request, http_req)
 
 
 @router.post("/export-pdf")
-async def export_pdf(request: EmailAnalysisRequest):
-    analysis = await process_email(request)
+async def export_pdf(request: EmailAnalysisRequest, http_req: Request):
+    analysis = await process_email(request, http_req)
     pdf_bytes = generate_pdf_report(analysis)
     return Response(
         content=pdf_bytes,
