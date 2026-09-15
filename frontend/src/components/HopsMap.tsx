@@ -25,10 +25,20 @@ export const HopsMap: React.FC<HopsMapProps> = ({ hops }) => {
     const map = L.map(mapRef.current).setView([20, 0], 2);
     leafletInstance.current = map;
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; CartoDB &copy; OpenStreetMap',
-      maxZoom: 19,
-    }).addTo(map);
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        maxZoom: 16,
+      }
+    ).addTo(map);
+
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+      {
+        maxZoom: 16,
+      }
+    ).addTo(map);
 
     const validHops = hops.filter(
       (h) => h.latitude !== null && h.longitude !== null && typeof h.latitude === 'number' && typeof h.longitude === 'number'
