@@ -20,6 +20,7 @@
 - [Motor de Pontuação de Risco (Risk Engine)](#-motor-de-pontuação-de-risco-risk-engine)
 - [Inicialização Rápida (1 Comando)](#-inicialização-rápida-1-comando)
 - [Instalação e Execução Manual](#-instalação-e-execução-manual)
+- [Deploy em Produção](#-deploy-em-produção)
 - [Guia da API REST](#-guia-da-api-rest)
 - [Amostras e Casos de Uso Forense](#-amostras-e-casos-de-uso-forense)
 - [Execução da Suíte de Testes](#-execução-da-suíte-de-testes)
@@ -256,6 +257,145 @@ npm run dev
 
 ---
 
+## 🐳 Deploy em Produção
+
+Esta seção descreve a infraestrutura de produção pronta para implantação com contêineres Docker, proxy reverso Nginx com terminação TLS, certificados SSL/TLS automáticos da Let's Encrypt (Certbot) e scripts de automação.
+
+### 📋 Requisitos de Sistema
+
+- **Sistema Operacional**: Distribuição Linux (Ubuntu 22.04 LTS / 24.04 LTS ou Debian 11/12 recomendados).
+- **Docker Engine & Docker Compose**:
+  - Docker Engine versão 24.0+
+  - Docker Compose v2 (`docker compose` plugin integrado, v2.20+)
+- **Portas de Rede e Firewall**:
+  - Portas **`80/TCP`** (HTTP) e **`443/TCP`** (HTTPS) abertas no firewall do host e liberadas nos grupos de segurança da nuvem (ex: AWS Security Groups, GCP Firewall Rules, Azure NSG):
+    ```bash
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    sudo ufw reload
+    ```
+- **Apontamento de DNS**:
+  - Domínio ou subdomínio FQDN com registro DNS do tipo **`A`** (ou `CNAME`) apontando diretamente para o endereço IP público do servidor (requisito obrigatório para validação de posse do domínio pela Let's Encrypt via desafio ACME HTTP-01).
+
+---
+
+### 🚀 Guia de Instalação Passo a Passo (Primeiro Deploy)
+
+Para implantar a aplicação pela primeira vez no servidor de produção, siga as etapas abaixo:
+
+#### 1. Clonar o Repositório no Servidor
+```bash
+git clone https://github.com/usuario/bp-email-analiser.git /opt/bp-email-analiser
+cd /opt/bp-email-analiser
+```
+
+#### 2. Configurar o Arquivo `.env` de Produção
+Copie o modelo de produção `.env.production.example` para `.env` e personalize as variáveis:
+```bash
+cp .env.production.example .env
+nano .env
+```
+
+**Principais variáveis de ambiente:**
+| Variável | Descrição | Exemplo |
+|---|---|---|
+| `DOMAIN` | FQDN público configurado no DNS para a aplicação | `analyzer.empresa.com.br` |
+| `LETSENCRYPT_EMAIL` | E-mail de contato para notificações e avisos de expiração | `secops@empresa.com.br` |
+| `CERTBOT_STAGING` | Ambiente de emissão (`0` para produção real; `1` para testes no staging Let's Encrypt) | `0` |
+| `AUDIT_LOG_ENABLED` | Habilita a gravação forense de auditoria persistida em disco | `True` |
+| `AUDIT_LOG_FILE` | Caminho do arquivo de auditoria (montado no host em `./logs/audit.log`) | `logs/audit.log` |
+| `AUDIT_LOG_LEVEL` | Nível de detalhamento do log de auditoria (`FULL`, `SUMMARY`, `ERROR`) | `FULL` |
+| `NETWORK_TIMEOUT_SECONDS` | Timeout máximo em segundos para consultas externas (RDAP, GeoIP, DNSBL) | `2.5` |
+| `MAX_HEADER_SIZE_BYTES` | Tamanho máximo permitido de cabeçalho bruto por requisição (padrão: 1MB) | `1000000` |
+
+#### 3. Executar o Bootstrap de SSL (`init-ssl.sh`)
+Para resolver a dependência circular (o Nginx exige certificados TLS para iniciar no modo HTTPS, mas o Certbot precisa do Nginx ativo na porta 80 para validar o domínio), execute o script de inicialização SSL:
+```bash
+./scripts/init-ssl.sh
+```
+
+**O que o script executa automaticamente:**
+1. Valida o ambiente (presença de `.env`, Docker e Docker Compose v2).
+2. Cria os diretórios de persistência de certificados (`./certbot/conf`) e validação ACME (`./certbot/www`).
+3. Gera um certificado dummy autoassinado temporário para permitir a inicialização do Nginx com suporte a HTTPS.
+4. Inicializa o contêiner `bp-web` (Nginx).
+5. Remove o certificado dummy temporário e executa o Certbot (`certbot certonly --webroot`) solicitando os certificados oficiais da Let's Encrypt.
+6. Executa a recarga suave do Nginx (`docker compose exec -T web nginx -s reload`), ativando o certificado oficial válido.
+
+#### 4. Conclusão e Verificação
+Após a conclusão do script, a plataforma estará disponível com segurança:
+- **Interface Web**: `https://<seu-dominio>` (ex: `https://analyzer.empresa.com.br`)
+- **Headers de Segurança Ativos**: HSTS (`Strict-Transport-Security: max-age=31536000`), `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` e política TLS moderna (TLSv1.2 / TLSv1.3).
+- **Documentação Swagger da API**: `https://<seu-dominio>/api/docs`
+
+---
+
+### 🔄 Atualizações e Deploy Regular (`deploy.sh`)
+
+Após o setup inicial, qualquer atualização de código ou implantação contínua em produção é realizada através de um único comando automatizado:
+
+```bash
+./deploy.sh
+```
+
+**Fluxo de execução do `deploy.sh`:**
+1. **Validação**: Verifica se Docker, Docker Compose e o arquivo `.env` estão devidamente configurados.
+2. **Diretório de Logs**: Garante a criação de `./logs` com permissões adequadas (`755`).
+3. **Sincronização de Código**: Executa `git pull --ff-only` com o repositório remoto (quando aplicável).
+4. **Build e Subida**: Compila imagens atualizadas (`docker compose build --pull`) e reinicia os serviços em segundo plano sem indisponibilidade (`docker compose up -d --remove-orphans`).
+5. **Verificação de Saúde (Healthcheck Polling)**: Monitora ativamente o endpoint `http://localhost:8000/api/health` até 15 tentativas (30 segundos), assegurando que o backend está saudável e operacional antes de finalizar.
+6. **Limpeza Automática**: Remove imagens Docker intermediárias e camadas órfãs (`docker image prune -f`).
+
+---
+
+### ⚙️ Comandos Úteis de Operação e Monitoramento
+
+| Ação | Comando | Descrição |
+|---|---|---|
+| **Status dos Serviços** | `docker compose ps` | Exibe estado de execução, integridade (health) e portas dos contêineres |
+| **Logs Gerais em Tempo Real** | `docker compose logs -f` | Acompanha a saída consolidada de todos os serviços simultaneamente |
+| **Logs da API Backend** | `docker compose logs -f backend` | Monitora logs de requisições, diagnósticos e erros do FastAPI |
+| **Logs do Nginx (Web)** | `docker compose logs -f web` | Monitora acessos HTTP/HTTPS, proxies reversos e requisições do frontend |
+| **Logs do Certbot** | `docker compose logs -f certbot` | Acompanha as verificações periódicas de renovação de certificados |
+| **Logs Forenses de Auditoria** | `tail -f logs/audit.log` | Monitora em tempo real no host os registros estruturados de auditoria |
+| **Reiniciar Todos os Serviços** | `docker compose restart` | Reinicia todos os contêineres mantendo volumes e configurações |
+| **Reiniciar Serviço Específico** | `docker compose restart backend` | Reinicia apenas o serviço selecionado (ex: `backend` ou `web`) |
+| **Interromper a Aplicação** | `docker compose down` | Encerra e remove contêineres, preservando certificados e arquivos de log |
+
+---
+
+### 🔐 Renovação de Certificados SSL e Recarregamento do Nginx
+
+#### Renovação Automática pelo Certbot
+O contêiner `bp-certbot` opera continuamente em segundo plano, executando uma verificação a cada 12 horas:
+```bash
+certbot renew --webroot -w /var/www/certbot --quiet
+```
+Quando o certificado entra na janela de renovação (30 dias antes do vencimento), o Certbot conclui o desafio HTTP-01 e grava os novos certificados em `./certbot/conf/live/${DOMAIN}/`.
+
+#### Recarregamento do Nginx em Memória (*In-Memory TLS Renewal*)
+O servidor Nginx carrega os certificados TLS na memória RAM no momento de sua inicialização. Quando novos certificados são renovados em disco pelo Certbot, o Nginx necessita de um sinal de recarga (`SIGHUP` / `nginx -s reload`) para atualizar os certificados em memória sem encerrar conexões ativas ou causar indisponibilidade.
+
+- **Recarga manual sob demanda:**
+  ```bash
+  docker compose exec -T web nginx -s reload
+  ```
+
+- **Automatização Periódica Recomendada via Cron no Host:**
+  Para assegurar que novos certificados renovados sejam carregados automaticamente na memória do Nginx sem qualquer intervenção manual, configure uma rotina na crontab do servidor (`crontab -e`):
+  ```cron
+  # Recarrega certificados TLS no Nginx diariamente às 03:30 da madrugada
+  30 3 * * * cd /opt/bp-email-analiser && docker compose exec -T web nginx -s reload >/dev/null 2>&1
+  ```
+
+- **Testar Renovação Manual em Modo Simulação (Dry-Run):**
+  Para verificar se o mecanismo de renovação ACME está operando corretamente sem alterar certificados válidos nem atingir limites de taxa da Let's Encrypt:
+  ```bash
+  docker compose run --rm --entrypoint certbot certbot renew --dry-run
+  ```
+
+---
+
 ## 🌐 Guia da API REST
 
 ### 1. `POST /api/analyze`
@@ -462,6 +602,7 @@ bp-email-analiser/
 │   │   ├── test_schemas.py
 │   │   └── test_scoring.py
 │   ├── requirements.txt
+│   ├── Dockerfile                      # Imagem de produção Python 3.12-slim com healthcheck
 │   └── .env.example
 ├── frontend/
 │   ├── src/
@@ -485,12 +626,27 @@ bp-email-analiser/
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── tailwind.config.js
-│   └── vite.config.ts
+│   ├── vite.config.ts
+│   └── Dockerfile                      # Build multi-stage Node 20 + Nginx 1.27 Alpine
+├── docker/                             # Configurações e templates de servidor web Nginx
+│   └── nginx/
+│       ├── nginx.conf                  # Configuração global Nginx (gzip, logs, worker)
+│       └── templates/
+│           └── default.conf.template   # VirtualHost HTTPS com proxy reverso e ACME challenge
+├── scripts/                            # Scripts operacionais e de bootstrap
+│   └── init-ssl.sh                     # Bootstrap inicial de certificados SSL/TLS Let's Encrypt
 ├── docs/
 │   └── superpowers/
-│       ├── specs/2026-09-14-bp-email-analiser-design.md
-│       └── plans/2026-09-14-email-header-analyzer.md
-├── run.sh                              # Script de inicialização rápida com 1 comando
+│       ├── specs/
+│       │   ├── 2026-09-14-bp-email-analiser-design.md
+│       │   └── 2026-09-15-server-deploy-design.md
+│       └── plans/
+│           ├── 2026-09-14-email-header-analyzer.md
+│           └── 2026-09-15-server-deploy.md
+├── .env.production.example             # Modelo de variáveis de ambiente para produção
+├── docker-compose.yml                  # Orquestração de serviços (backend, web, certbot)
+├── deploy.sh                           # Script automatizado de deploy e atualização em produção
+├── run.sh                              # Script de inicialização rápida em ambiente local
 └── README.md                           # Documentação técnica completa
 ```
 
