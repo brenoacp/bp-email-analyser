@@ -310,9 +310,74 @@ nano .env
 | `NETWORK_TIMEOUT_SECONDS` | Timeout máximo para consultas externas (RDAP, GeoIP, DNSBL) | `2.5` |
 | `MAX_HEADER_SIZE_BYTES` | Tamanho máximo permitido de cabeçalho bruto por requisição | `1000000` |
 
-#### 2. Configurar o Proxy Reverso no Nginx do Servidor Host
-No Nginx do seu host (ex: `/etc/nginx/sites-available/bp-email-analiser.conf`), configure o virtualhost apontando para a porta local `8080`:
+#### 2. Configurar o Proxy Reverso no Servidor Host
 
+##### Opção A: Apache 2 (Recomendado se o seu servidor usa Apache)
+
+1. **Habilitar os módulos de proxy, SSL e reescrita:**
+   ```bash
+   sudo a2enmod proxy proxy_http proxy_wstunnel ssl headers rewrite
+   ```
+
+2. **Criar a configuração do VirtualHost** (ex: `/etc/apache2/sites-available/bp-email-analiser.conf`):
+   ```apache
+   <VirtualHost *:80>
+       ServerName email-analyzer.seudominio.com.br
+
+       # Redirecionamento HTTP para HTTPS
+       RewriteEngine On
+       RewriteCond %{HTTPS} off
+       RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+   </VirtualHost>
+
+   <VirtualHost *:443>
+       ServerName email-analyzer.seudominio.com.br
+
+       # Certificados SSL já instalados no seu servidor
+       SSLEngine on
+       SSLCertificateFile /etc/letsencrypt/live/email-analyzer.seudominio.com.br/fullchain.pem
+       SSLCertificateKeyFile /etc/letsencrypt/live/email-analyzer.seudominio.com.br/privkey.pem
+
+       # Protocolos e Ciphers modernos
+       SSLProtocol all -SSLv3 -TLSv1 -TLSv1.1
+       SSLCipherSuite HIGH:!aNULL:!MD5:!3DES
+       SSLHonorCipherOrder on
+
+       # Configurações de Proxy Reverso
+       ProxyPreserveHost On
+       ProxyRequests Off
+
+       # Cabeçalhos de encaminhamento
+       RequestHeader set X-Forwarded-Proto "https"
+       RequestHeader set X-Forwarded-Port "443"
+
+       # Limite de corpo da requisição (10MB)
+       LimitRequestBody 10485760
+
+       # Encaminhamento para o contêiner Docker bp-web
+       ProxyPass / http://127.0.0.1:8080/
+       ProxyPassReverse / http://127.0.0.1:8080/
+
+       # Suporte a WebSocket
+       RewriteEngine On
+       RewriteCond %{HTTP:Upgrade} websocket [NC]
+       RewriteCond %{HTTP:Connection} upgrade [NC]
+       RewriteRule ^/?(.*) "ws://127.0.0.1:8080/$1" [P,L]
+
+       ErrorLog ${APACHE_LOG_DIR}/bp-email-analiser_error.log
+       CustomLog ${APACHE_LOG_DIR}/bp-email-analiser_access.log combined
+   </VirtualHost>
+   ```
+
+3. **Habilitar o site e recarregar o Apache:**
+   ```bash
+   sudo a2ensite bp-email-analiser.conf
+   sudo apache2ctl configtest
+   sudo systemctl reload apache2
+   ```
+
+##### Opção B: Nginx (Caso utilize Nginx no Host)
+No Nginx do host (ex: `/etc/nginx/sites-available/bp-email-analiser.conf`):
 ```nginx
 server {
     listen 80;
@@ -326,15 +391,11 @@ server {
     listen [::]:443 ssl http2;
     server_name email-analyzer.seudominio.com.br;
 
-    # Certificados SSL já instalados no seu servidor
     ssl_certificate /etc/letsencrypt/live/email-analyzer.seudominio.com.br/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/email-analyzer.seudominio.com.br/privkey.pem;
 
-    # Parâmetros de segurança recomendados
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers off;
-
-    # Tamanho máximo de upload (para cabeçalhos grandes)
     client_max_body_size 10M;
 
     location / {
@@ -351,8 +412,7 @@ server {
     }
 }
 ```
-
-Habilite a configuração e recarregue o Nginx do host:
+Habilite e recarregue:
 ```bash
 sudo ln -s /etc/nginx/sites-available/bp-email-analiser.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
