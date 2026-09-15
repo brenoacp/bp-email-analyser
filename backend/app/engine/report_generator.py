@@ -60,12 +60,31 @@ def generate_pdf_report(analysis: EmailAnalysisResponse) -> bytes:
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
 
+    brand_style = ParagraphStyle(
+        "BrandHeader",
+        parent=styles["Normal"],
+        fontSize=11,
+        leading=14,
+        fontName="Helvetica-Bold",
+        textColor=colors.HexColor("#0284c7"),
+    )
+
+    sub_right = ParagraphStyle(
+        "SubRight",
+        parent=styles["Normal"],
+        fontSize=8.5,
+        leading=11,
+        alignment=2,
+        textColor=colors.HexColor("#64748b"),
+    )
+
     title_style = ParagraphStyle(
         "DocTitle",
         parent=styles["Heading1"],
-        fontSize=20,
-        leading=24,
+        fontSize=18,
+        leading=22,
         textColor=colors.HexColor("#0f172a"),
+        spaceAfter=4,
     )
 
     risk_label = (
@@ -74,7 +93,25 @@ def generate_pdf_report(analysis: EmailAnalysisResponse) -> bytes:
         else str(analysis.summary.risk_level)
     )
 
+    top_bar = Table(
+        [
+            [
+                Paragraph("<b>BP Email Header Analyzer</b>", brand_style),
+                Paragraph("Plataforma Forense SOC", sub_right),
+            ]
+        ],
+        colWidths=[360, 180],
+    )
+    top_bar.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+        ("PADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LINEBELOW", (0, 0), (-1, -1), 1.5, colors.HexColor("#0284c7")),
+    ]))
+
     story = []
+    story.append(top_bar)
+    story.append(Spacer(1, 10))
     story.append(Paragraph("Relatório Técnico de Forense de E-mail (SOC)", title_style))
     story.append(
         Paragraph(

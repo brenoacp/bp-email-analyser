@@ -5,40 +5,28 @@ import {
   Play,
   RotateCcw,
   Loader2,
-  CheckCircle2,
   AlertTriangle,
-  ShieldAlert,
-  Bug,
   Globe,
   Database,
   Search,
   Info,
 } from 'lucide-react';
-import { AnalysisOptions, SampleId } from '../types/email';
+import { AnalysisOptions } from '../types/email';
 
 export interface HeaderInputProps {
   value: string;
   onChange: (val: string) => void;
   onAnalyze: () => void;
-  onLoadSample: (sampleId: SampleId) => void;
   isLoading?: boolean;
   options?: AnalysisOptions;
   onOptionsChange?: (options: AnalysisOptions) => void;
   onClear?: () => void;
 }
 
-const SAMPLE_BUTTONS: { id: SampleId; label: string; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
-  { id: 'legitimate', label: 'Legítimo', icon: CheckCircle2, color: 'text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20' },
-  { id: 'phishing', label: 'Phishing', icon: AlertTriangle, color: 'text-amber-700 dark:text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20' },
-  { id: 'bec', label: 'BEC / Spoofing', icon: ShieldAlert, color: 'text-orange-700 dark:text-orange-400 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20' },
-  { id: 'botnet', label: 'Botnet / Spam', icon: Bug, color: 'text-rose-700 dark:text-rose-400 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20' },
-];
-
 export const HeaderInput: React.FC<HeaderInputProps> = ({
   value,
   onChange,
   onAnalyze,
-  onLoadSample,
   isLoading = false,
   options = { live_dns: true, rdap_lookup: true, rbl_check: true },
   onOptionsChange,
@@ -126,25 +114,6 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Cole os cabeçalhos RFC 822 / RFC 5322 ou arraste um arquivo (.eml, .msg)
           </p>
-        </div>
-
-        {/* Amostras Rápidas */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">
-            Amostras:
-          </span>
-          {SAMPLE_BUTTONS.map(({ id, label, icon: Icon, color }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onLoadSample(id)}
-              disabled={isLoading}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${color}`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {label}
-            </button>
-          ))}
         </div>
       </div>
 

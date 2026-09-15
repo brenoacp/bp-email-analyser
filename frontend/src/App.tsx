@@ -27,8 +27,8 @@ import { IdentityCard } from './components/IdentityCard';
 import { SegCard } from './components/SegCard';
 import { WhoisPanel } from './components/WhoisPanel';
 import { RawHeaderViewer } from './components/RawHeaderViewer';
-import { analyzeEmail, fetchSample, exportPdf, downloadBlob } from './services/api';
-import { EmailAnalysisResponse, AnalysisOptions, SampleId, RiskLevel } from './types/email';
+import { analyzeEmail, exportPdf, downloadBlob } from './services/api';
+import { EmailAnalysisResponse, AnalysisOptions, RiskLevel } from './types/email';
 
 type TabId = 'overview' | 'hops' | 'auth' | 'identity' | 'whois' | 'seg' | 'raw';
 
@@ -67,24 +67,6 @@ export const App: React.FC = () => {
       setActiveTab('overview');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha inesperada ao analisar cabeçalho');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLoadSample = async (sampleId: SampleId) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await fetchSample(sampleId);
-      setHeaderText(data.raw_header);
-      // Automatically analyze sample on load for fast demonstration
-      const result = await analyzeEmail(data.raw_header, options);
-      setAnalysis(result);
-      setActiveTab('overview');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao carregar amostra');
     } finally {
       setIsLoading(false);
     }
@@ -202,7 +184,6 @@ export const App: React.FC = () => {
             value={headerText}
             onChange={setHeaderText}
             onAnalyze={handleAnalyze}
-            onLoadSample={handleLoadSample}
             isLoading={isLoading}
             options={options}
             onOptionsChange={setOptions}
@@ -509,7 +490,7 @@ export const App: React.FC = () => {
             <Terminal className="w-12 h-12 mx-auto text-slate-400 dark:text-slate-600" />
             <h3 className="text-base font-semibold text-slate-800 dark:text-slate-300">Pronto para Inspeção Forense</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
-              Insira o cabeçalho completo de um e-mail no campo acima, arraste um arquivo <code className="text-slate-700 dark:text-slate-300 font-mono">.eml</code> ou selecione uma das amostras pré-configuradas (Legítimo, Phishing, BEC, Botnet) para executar a desmontagem e análise automatizada.
+              Insira o cabeçalho completo de um e-mail no campo acima ou arraste um arquivo <code className="text-slate-700 dark:text-slate-300 font-mono">.eml</code> ou <code className="text-slate-700 dark:text-slate-300 font-mono">.msg</code> para executar a desmontagem e análise automatizada.
             </p>
           </div>
         )}
