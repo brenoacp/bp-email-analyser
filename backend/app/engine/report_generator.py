@@ -4,8 +4,55 @@ from xml.sax.saxutils import escape as xml_escape
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.graphics.shapes import Drawing, Circle, Wedge, String, Rect
 from reportlab.lib import colors
 from app.core.schemas import EmailAnalysisResponse
+
+
+def _create_risk_gauge_drawing(score: int, risk_level: str) -> Drawing:
+    d = Drawing(135, 135)
+    cx, cy = 67.5, 72
+
+    rl_upper = (risk_level or "").upper()
+    if rl_upper == "CRITICAL" or score > 75:
+        theme_color = colors.HexColor("#dc2626")
+        bg_accent = colors.HexColor("#fef2f2")
+    elif rl_upper == "HIGH" or score > 50:
+        theme_color = colors.HexColor("#ea580c")
+        bg_accent = colors.HexColor("#fff7ed")
+    elif rl_upper == "INFO" or score > 25:
+        theme_color = colors.HexColor("#d97706")
+        bg_accent = colors.HexColor("#fffbeb")
+    else:
+        theme_color = colors.HexColor("#059669")
+        bg_accent = colors.HexColor("#ecfdf5")
+
+    # Card background frame
+    d.add(Rect(5, 5, 125, 125, rx=8, ry=8, fillColor=bg_accent, strokeColor=colors.HexColor("#e2e8f0"), strokeWidth=0.5))
+
+    # Title above gauge
+    d.add(String(cx, 115, "SCORE DE RISCO", textAnchor="middle", fontName="Helvetica-Bold", fontSize=7.5, fillColor=colors.HexColor("#64748b")))
+
+    # Track circle
+    d.add(Circle(cx, cy, 36, strokeColor=colors.HexColor("#e2e8f0"), strokeWidth=7.5, fillColor=None))
+
+    # Active score arc
+    score_clamped = max(0, min(100, score))
+    if score_clamped >= 100:
+        d.add(Circle(cx, cy, 36, strokeColor=theme_color, strokeWidth=7.5, fillColor=None))
+    elif score_clamped > 0:
+        d.add(Wedge(cx, cy, 39.75, 90 - score_clamped * 3.6, 90, strokeColor=None, fillColor=theme_color))
+        d.add(Circle(cx, cy, 32.25, strokeColor=None, fillColor=bg_accent))
+
+    # Number inside gauge
+    d.add(String(cx, cy + 1.5, str(score_clamped), textAnchor="middle", fontName="Helvetica-Bold", fontSize=18, fillColor=theme_color))
+    d.add(String(cx, cy - 9.5, "/ 100", textAnchor="middle", fontName="Helvetica", fontSize=7, fillColor=colors.HexColor("#64748b")))
+
+    # Badge pill below gauge
+    d.add(Rect(cx - 36, 14, 72, 16, rx=8, ry=8, fillColor=theme_color, strokeColor=None))
+    d.add(String(cx, 18.5, rl_upper, textAnchor="middle", fontName="Helvetica-Bold", fontSize=7.5, fillColor=colors.white))
+
+    return d
 
 
 def generate_pdf_report(analysis: EmailAnalysisResponse) -> bytes:
@@ -40,7 +87,9 @@ def generate_pdf_report(analysis: EmailAnalysisResponse) -> bytes:
     story.append(Paragraph(f"<b>Hash SHA-256 do Cabeçalho:</b> <code>{raw_hash}...</code>", styles["Normal"]))
     story.append(Spacer(1, 14))
 
-    # Summary Box
+    # Executive Summary Box with Visual Score Gauge
+    gauge_drawing = _create_risk_gauge_drawing(analysis.summary.score, risk_label)
+
     safe_verdict = xml_escape(analysis.summary.verdict_text or "")
     safe_rec = xml_escape(analysis.summary.recommendation or "")
     safe_from_name = xml_escape(analysis.identity.from_display_name or "")
@@ -50,18 +99,28 @@ def generate_pdf_report(analysis: EmailAnalysisResponse) -> bytes:
     safe_origin_org = xml_escape(analysis.origin_ip.org or "N/A")
 
     summary_data = [
-        [Paragraph("<b>Veredito Geral</b>", styles["Normal"]), Paragraph(safe_verdict, styles["Normal"])],
-        [Paragraph("<b>Recomendação</b>", styles["Normal"]), Paragraph(safe_rec, styles["Normal"])],
-        [Paragraph("<b>Remetente (From)</b>", styles["Normal"]), Paragraph(f"{safe_from_name} &lt;{safe_from_addr}&gt;", styles["Normal"])],
-        [Paragraph("<b>IP de Origem</b>", styles["Normal"]), Paragraph(f"{safe_origin_ip} ({safe_origin_country}, {safe_origin_org})", styles["Normal"])],
+        [Paragraph("<b>Veredito Geral:</b>", styles["Normal"]), Paragraph(safe_verdict, styles["Normal"])],
+        [Paragraph("<b>Recomendação:</b>", styles["Normal"]), Paragraph(safe_rec, styles["Normal"])],
+        [Paragraph("<b>Remetente (From):</b>", styles["Normal"]), Paragraph(f"{safe_from_name} &lt;{safe_from_addr}&gt;", styles["Normal"])],
+        [Paragraph("<b>IP de Origem:</b>", styles["Normal"]), Paragraph(f"{safe_origin_ip} ({safe_origin_country}, {safe_origin_org})", styles["Normal"])],
     ]
-    t_summary = Table(summary_data, colWidths=[130, 410])
-    t_summary.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-        ("PADDING", (0, 0), (-1, -1), 6),
+    t_summary_inner = Table(summary_data, colWidths=[105, 295])
+    t_summary_inner.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("PADDING", (0, 0), (-1, -1), 4),
+        ("LINEBELOW", (0, 0), (-1, -2), 0.5, colors.HexColor("#e2e8f0")),
     ]))
-    story.append(t_summary)
+
+    t_executive = Table([[gauge_drawing, t_summary_inner]], colWidths=[140, 400])
+    t_executive.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (0, 0), (0, 0), "CENTER"),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+        ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#cbd5e1")),
+        ("LINEBEFORE", (1, 0), (1, -1), 0.5, colors.HexColor("#e2e8f0")),
+        ("PADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(t_executive)
     story.append(Spacer(1, 14))
 
     # Findings Table

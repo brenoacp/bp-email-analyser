@@ -200,3 +200,49 @@ def test_analyze_default_options_omitted():
         assert data["summary"]["score"] <= 25
         assert data["origin_ip"]["country"] == "United States"
 
+
+def test_generate_pdf_report_various_scores():
+    from app.engine.report_generator import generate_pdf_report
+    from app.core.schemas import (
+        EmailAnalysisResponse,
+        AnalysisSummary,
+        RiskLevel,
+        IdentityAnalysis,
+        OriginIpInfo,
+        DomainInfo,
+        AuthStatus,
+        ClientMetadata,
+        SegVerdicts,
+    )
+
+    for test_score, test_level in [
+        (0, RiskLevel.SAFE),
+        (25, RiskLevel.SAFE),
+        (45, RiskLevel.INFO),
+        (70, RiskLevel.HIGH),
+        (100, RiskLevel.CRITICAL),
+    ]:
+        analysis = EmailAnalysisResponse(
+            summary=AnalysisSummary(
+                score=test_score,
+                risk_level=test_level,
+                verdict_text="Teste de veredito",
+                recommendation="Teste de recomendacao",
+                elapsed_ms=12.5,
+                total_hops=1,
+            ),
+            identity=IdentityAnalysis(from_display_name="Test", from_address="test@example.com", from_domain="example.com"),
+            origin_ip=OriginIpInfo(ip="1.2.3.4", country="BR", org="TestOrg"),
+            domain_info=DomainInfo(domain="example.com"),
+            authentication=AuthStatus(),
+            client_metadata=ClientMetadata(),
+            seg_verdicts=SegVerdicts(),
+            hops=[],
+            findings=[],
+            raw_header_hash="a" * 64,
+        )
+        pdf_bytes = generate_pdf_report(analysis)
+        assert isinstance(pdf_bytes, bytes)
+        assert len(pdf_bytes) > 1000
+        assert pdf_bytes.startswith(b"%PDF")
+
