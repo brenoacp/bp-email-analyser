@@ -1,0 +1,29 @@
+# Version control & internal tools
+.git
+.gitignore
+.superpowers
+
+# Python artifacts
+.venv
+venv
+ENV
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.pytest_cache
+.coverage
+htmlcov
+logs
+*.log
+
+# Node & Frontend artifacts
+node_modules
+**/node_modules
+frontend/dist
+dist
+
+# IDE and Editor files
+.vscode
+.idea
+*.swp

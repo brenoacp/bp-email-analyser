@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY frontend/package.json ./
+COPY frontend/package*.json ./
 RUN npm install
 
 COPY frontend/ ./
