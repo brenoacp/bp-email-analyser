@@ -24,9 +24,6 @@ COPY docker/nginx/templates/default.conf.template /etc/nginx/templates/default.c
 # Copia os arquivos compilados da SPA
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Cria diretório para desafio do Certbot
-RUN mkdir -p /var/www/certbot
-
-EXPOSE 80 443
+EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
