@@ -27,7 +27,7 @@ mkdir -p "./certbot/conf/live/$DOMAIN"
 mkdir -p "./certbot/www"
 
 if [ -d "$CERT_PATH" ] && [ -f "$CERT_PATH/fullchain.pem" ]; then
-    read -p "[?] Certificado existente encontrado para $DOMAIN. Deseja substituí-lo? (s/N) " DECISION
+    read -r -p "[?] Certificado existente encontrado para $DOMAIN. Deseja substituí-lo? (s/N) " DECISION
     if [ "$DECISION" != "s" ] && [ "$DECISION" != "S" ]; then
         echo "[*] Abortando bootstrap de SSL. Certificado mantido."
         exit 0
@@ -52,7 +52,7 @@ if [ "${CERTBOT_STAGING:-0}" != "0" ]; then
     STAGING_ARG="--staging"
 fi
 
-docker compose run --rm certbot certonly \
+docker compose run --rm --entrypoint certbot certbot certonly \
     --webroot \
     -w /var/www/certbot \
     $STAGING_ARG \
@@ -64,6 +64,6 @@ docker compose run --rm certbot certonly \
     --non-interactive
 
 echo "[+] 4/4 - Recarregando o Nginx com o novo certificado..."
-docker compose exec web nginx -s reload
+docker compose exec -T web nginx -s reload
 
 echo "=== SSL configurado com sucesso para https://$DOMAIN ==="
