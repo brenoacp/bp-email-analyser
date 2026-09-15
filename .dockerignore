@@ -27,3 +27,8 @@ dist
 .vscode
 .idea
 *.swp
+
+# Environment and secrets
+.env
+.env.*
+*.env

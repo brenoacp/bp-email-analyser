@@ -12,3 +12,8 @@ ENV
 logs/*.log
 .git
 .gitignore
+
+# Environment and secrets
+.env
+.env.*
+*.env
