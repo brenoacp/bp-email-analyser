@@ -25,8 +25,8 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({ score, riskLevel, elapsedM
   const formattedMs = typeof elapsedMs === 'number' ? elapsedMs.toFixed(1) : elapsedMs;
 
   return (
-    <div className={`p-6 rounded-2xl bg-slate-900/80 border ${colors.border} backdrop-blur-sm flex flex-col items-center justify-center text-center shadow-lg shadow-black/20`}>
-      <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+    <div className={`p-6 rounded-2xl bg-white dark:bg-slate-900/80 border ${colors.border} backdrop-blur-sm flex flex-col items-center justify-center text-center shadow-lg shadow-black/5 dark:shadow-black/20`}>
+      <span className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold mb-2">
         Score de Risco / Fraude
       </span>
       <div className="relative flex items-center justify-center w-36 h-36">
@@ -35,7 +35,7 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({ score, riskLevel, elapsedM
             cx="50"
             cy="50"
             r="40"
-            className="stroke-slate-800"
+            className="stroke-slate-200 dark:stroke-slate-800"
             strokeWidth="10"
             fill="transparent"
           />
@@ -52,8 +52,8 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({ score, riskLevel, elapsedM
           />
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span className="text-4xl font-extrabold text-white tracking-tight">{score}</span>
-          <span className="text-xs text-slate-400">/ 100</span>
+          <span className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{score}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">/ 100</span>
         </div>
       </div>
       <div className={`mt-3 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-white ${colors.bg}`}>

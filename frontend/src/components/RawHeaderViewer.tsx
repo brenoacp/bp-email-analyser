@@ -79,12 +79,12 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
       if (matchHeader) {
         return (
           <>
-            <span className="text-sky-400 font-semibold">{matchHeader[1]}:</span>
-            <span className="text-slate-300">{matchHeader[2]}</span>
+            <span className="text-sky-600 dark:text-sky-400 font-semibold">{matchHeader[1]}:</span>
+            <span className="text-slate-700 dark:text-slate-300">{matchHeader[2]}</span>
           </>
         );
       }
-      return <span className="text-slate-300">{text}</span>;
+      return <span className="text-slate-700 dark:text-slate-300">{text}</span>;
     }
 
     // Highlighting search matches
@@ -97,12 +97,12 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
       const lower = remaining.toLowerCase();
       const matchIndex = lower.indexOf(term);
       if (matchIndex === -1) {
-        parts.push(<span key={keyIdx++} className="text-slate-300">{remaining}</span>);
+        parts.push(<span key={keyIdx++} className="text-slate-700 dark:text-slate-300">{remaining}</span>);
         break;
       }
 
       if (matchIndex > 0) {
-        parts.push(<span key={keyIdx++} className="text-slate-300">{remaining.substring(0, matchIndex)}</span>);
+        parts.push(<span key={keyIdx++} className="text-slate-700 dark:text-slate-300">{remaining.substring(0, matchIndex)}</span>);
       }
 
       parts.push(
@@ -123,7 +123,7 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
   return (
     <div className="space-y-4">
       {/* Barra de Ferramentas Superior */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm">
         {/* Campo de Busca */}
         <div className="relative flex-1 min-w-[240px] max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -132,13 +132,13 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Filtrar por cabeçalho, IP, domínio ou termo..."
-            className="w-full bg-slate-950 text-xs text-slate-200 pl-9 pr-8 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-sky-500 placeholder:text-slate-600 font-mono"
+            className="w-full bg-slate-50 dark:bg-slate-950 text-xs text-slate-800 dark:text-slate-200 pl-9 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:border-sky-500 placeholder:text-slate-400 dark:placeholder:text-slate-600 font-mono"
           />
           {searchTerm && (
             <button
               type="button"
               onClick={() => setSearchTerm('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -149,7 +149,7 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
         <div className="flex flex-wrap items-center gap-2">
           {searchTerm && (
             <div className="flex items-center gap-2 mr-2">
-              <span className="text-xs font-mono text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+              <span className="text-xs font-mono text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
                 {matchCount} {matchCount === 1 ? 'ocorrência' : 'ocorrências'}
               </span>
               <button
@@ -157,8 +157,8 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
                 onClick={() => setFilterOnlyMatches(!filterOnlyMatches)}
                 className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg border transition-colors ${
                   filterOnlyMatches
-                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/30'
-                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+                    ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30 font-semibold'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 title="Mostrar apenas as linhas que contêm o termo pesquisado"
               >
@@ -174,8 +174,8 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
             onClick={() => setIsWrapped(!isWrapped)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
               isWrapped
-                ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
-                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
             title="Alternar quebra automática de linha"
           >
@@ -187,10 +187,10 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
           <button
             type="button"
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
             title="Copiar cabeçalho bruto completo"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copied ? 'Copiado!' : 'Copiar'}</span>
           </button>
 
@@ -198,7 +198,7 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
           <button
             type="button"
             onClick={handleDownload}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
             title="Baixar cabeçalho em arquivo .txt"
           >
             <Download className="w-3.5 h-3.5" />
@@ -208,9 +208,9 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
       </div>
 
       {/* Janela de Código / Monospace Viewer */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 overflow-hidden shadow-sm">
         {/* Sub-header com Hash SHA-256 */}
-        <div className="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-800 text-xs text-slate-500 font-mono">
+        <div className="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 font-mono">
           <div className="flex items-center gap-2">
             <Hash className="w-3.5 h-3.5 text-slate-400" />
             <span className="truncate max-w-sm sm:max-w-md">
@@ -225,7 +225,7 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
         {/* Visualizador de Linhas */}
         <div className="p-4 max-h-[550px] overflow-y-auto overflow-x-auto text-xs font-mono select-text leading-relaxed">
           {filteredLines.length === 0 ? (
-            <div className="py-8 text-center text-slate-500 italic">
+            <div className="py-8 text-center text-slate-400 dark:text-slate-500 italic">
               Nenhuma linha encontrada correspondente ao termo "{searchTerm}".
             </div>
           ) : (
@@ -234,12 +234,12 @@ export const RawHeaderViewer: React.FC<RawHeaderViewerProps> = ({ rawHeader, hea
                 {filteredLines.map((item) => (
                   <tr
                     key={item.lineNum}
-                    className={`hover:bg-slate-900/50 transition-colors ${
+                    className={`hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors ${
                       item.hasMatch ? 'bg-amber-500/10' : ''
                     }`}
                   >
                     {/* Número da Linha */}
-                    <td className="py-0.5 pr-4 pl-1 select-none text-right text-slate-600 font-mono text-[11px] align-top w-10 border-r border-slate-800/80">
+                    <td className="py-0.5 pr-4 pl-1 select-none text-right text-slate-400 dark:text-slate-600 font-mono text-[11px] align-top w-10 border-r border-slate-200 dark:border-slate-800/80">
                       {item.lineNum}
                     </td>
 

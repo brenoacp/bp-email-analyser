@@ -28,10 +28,10 @@ export interface HeaderInputProps {
 }
 
 const SAMPLE_BUTTONS: { id: SampleId; label: string; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
-  { id: 'legitimate', label: 'Legítimo', icon: CheckCircle2, color: 'text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10' },
-  { id: 'phishing', label: 'Phishing', icon: AlertTriangle, color: 'text-amber-400 border-amber-500/30 hover:bg-amber-500/10' },
-  { id: 'bec', label: 'BEC / Spoofing', icon: ShieldAlert, color: 'text-orange-400 border-orange-500/30 hover:bg-orange-500/10' },
-  { id: 'botnet', label: 'Botnet / Spam', icon: Bug, color: 'text-rose-400 border-rose-500/30 hover:bg-rose-500/10' },
+  { id: 'legitimate', label: 'Legítimo', icon: CheckCircle2, color: 'text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20' },
+  { id: 'phishing', label: 'Phishing', icon: AlertTriangle, color: 'text-amber-700 dark:text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20' },
+  { id: 'bec', label: 'BEC / Spoofing', icon: ShieldAlert, color: 'text-orange-700 dark:text-orange-400 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20' },
+  { id: 'botnet', label: 'Botnet / Spam', icon: Bug, color: 'text-rose-700 dark:text-rose-400 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20' },
 ];
 
 export const HeaderInput: React.FC<HeaderInputProps> = ({
@@ -115,22 +115,22 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
   const charCount = value ? value.length : 0;
 
   return (
-    <div className="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+    <div className="w-full bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
       {/* Header / Title bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-sky-400" />
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <FileText className="w-5 h-5 text-sky-500 dark:text-sky-400" />
             Cabeçalho Bruto do E-mail
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Cole os cabeçalhos RFC 822 / RFC 5322 ou arraste um arquivo (.eml, .msg)
           </p>
         </div>
 
         {/* Amostras Rápidas */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">
             Amostras:
           </span>
           {SAMPLE_BUTTONS.map(({ id, label, icon: Icon, color }) => (
@@ -156,7 +156,7 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
         className={`relative mt-4 rounded-xl border-2 transition-all duration-200 ${
           isDragging
             ? 'border-sky-500 bg-sky-500/10'
-            : 'border-slate-800/80 bg-slate-950/60 focus-within:border-sky-500/60'
+            : 'border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/60 focus-within:border-sky-500/60'
         }`}
       >
         <textarea
@@ -164,38 +164,38 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
           onChange={(e) => onChange(e.target.value)}
           placeholder="Cole os cabeçalhos do e-mail aqui (Received, Authentication-Results, From, To, Date, etc.) ou solte o arquivo .eml..."
           rows={10}
-          className="w-full bg-transparent text-slate-200 text-xs font-mono p-4 resize-y focus:outline-none placeholder:text-slate-600 leading-relaxed"
+          className="w-full bg-transparent text-slate-800 dark:text-slate-200 text-xs font-mono p-4 resize-y focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 leading-relaxed"
           spellCheck={false}
         />
 
         {/* Drag Overlay Banner */}
         {isDragging && (
-          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs flex flex-col items-center justify-center rounded-xl pointer-events-none">
-            <Upload className="w-12 h-12 text-sky-400 animate-bounce mb-2" />
-            <span className="text-sm font-semibold text-white">Solte o arquivo .eml / .msg aqui</span>
-            <span className="text-xs text-slate-400">O conteúdo será carregado automaticamente</span>
+          <div className="absolute inset-0 bg-white/90 dark:bg-slate-950/85 backdrop-blur-xs flex flex-col items-center justify-center rounded-xl pointer-events-none">
+            <Upload className="w-12 h-12 text-sky-500 dark:text-sky-400 animate-bounce mb-2" />
+            <span className="text-sm font-semibold text-slate-900 dark:text-white">Solte o arquivo .eml / .msg aqui</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">O conteúdo será carregado automaticamente</span>
           </div>
         )}
       </div>
 
       {/* Error message */}
       {dragError && (
-        <div className="mt-2 text-xs text-rose-400 flex items-center gap-1">
+        <div className="mt-2 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <span>{dragError}</span>
         </div>
       )}
 
       {/* Supported file formats note */}
-      <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-400">
-        <Info className="w-3.5 h-3.5 text-sky-400/80 shrink-0" />
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+        <Info className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400/80 shrink-0" />
         <span>
-          Arquivos <span className="text-slate-300 font-mono">.eml</span> e cabeçalhos de texto são suportados nativamente. Arquivos <span className="text-slate-300 font-mono">.msg</span> devem ser exportados como <span className="text-slate-300 font-mono">.eml</span> ou colados como texto.
+          Arquivos <span className="text-slate-700 dark:text-slate-300 font-mono">.eml</span> e cabeçalhos de texto são suportados nativamente. Arquivos <span className="text-slate-700 dark:text-slate-300 font-mono">.msg</span> devem ser exportados como <span className="text-slate-700 dark:text-slate-300 font-mono">.eml</span> ou colados como texto.
         </span>
       </div>
 
       {/* Sub-bar: stats and actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mt-3 text-xs text-slate-400">
+      <div className="flex flex-wrap items-center justify-between gap-4 mt-3 text-xs text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-4">
           <span>{lineCount} linhas</span>
           <span>•</span>
@@ -215,7 +215,7 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50"
           >
             <Upload className="w-3.5 h-3.5" />
             Importar Arquivo (.eml / .msg)
@@ -226,7 +226,7 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
               type="button"
               onClick={onClear ? onClear : () => onChange('')}
               disabled={isLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 transition-colors disabled:opacity-50"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Limpar
@@ -236,18 +236,18 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
       </div>
 
       {/* Bottom options and Analyze action */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
         {/* Enrichment Options Toggles */}
-        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-700 dark:text-slate-300">
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={options.live_dns ?? true}
               onChange={() => handleOptionToggle('live_dns')}
               disabled={isLoading}
-              className="rounded bg-slate-800 border-slate-700 text-sky-500 focus:ring-sky-500/20"
+              className="rounded bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-sky-500 focus:ring-sky-500/20"
             />
-            <Search className="w-3.5 h-3.5 text-sky-400" />
+            <Search className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
             <span>Consultas DNS ao vivo</span>
           </label>
 
@@ -257,9 +257,9 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
               checked={options.rdap_lookup ?? true}
               onChange={() => handleOptionToggle('rdap_lookup')}
               disabled={isLoading}
-              className="rounded bg-slate-800 border-slate-700 text-sky-500 focus:ring-sky-500/20"
+              className="rounded bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-sky-500 focus:ring-sky-500/20"
             />
-            <Globe className="w-3.5 h-3.5 text-sky-400" />
+            <Globe className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
             <span>RDAP & Whois</span>
           </label>
 
@@ -269,9 +269,9 @@ export const HeaderInput: React.FC<HeaderInputProps> = ({
               checked={options.rbl_check ?? true}
               onChange={() => handleOptionToggle('rbl_check')}
               disabled={isLoading}
-              className="rounded bg-slate-800 border-slate-700 text-sky-500 focus:ring-sky-500/20"
+              className="rounded bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-sky-500 focus:ring-sky-500/20"
             />
-            <Database className="w-3.5 h-3.5 text-sky-400" />
+            <Database className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
             <span>Verificação RBL</span>
           </label>
         </div>

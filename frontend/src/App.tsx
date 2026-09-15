@@ -40,7 +40,7 @@ export const App: React.FC = () => {
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
   const [copiedJson, setCopiedJson] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [options, setOptions] = useState<AnalysisOptions>({
     live_dns: true,
     rdap_lookup: true,
@@ -130,13 +130,13 @@ export const App: React.FC = () => {
   const getSeverityBadgeClass = (severity: RiskLevel) => {
     switch (severity) {
       case 'SAFE':
-        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+        return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30';
       case 'INFO':
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+        return 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30';
       case 'HIGH':
-        return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+        return 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30';
       case 'CRITICAL':
-        return 'bg-rose-500/20 text-rose-300 border-rose-500/30';
+        return 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30';
     }
   };
 
@@ -151,26 +151,24 @@ export const App: React.FC = () => {
   ];
 
   return (
-    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
+    <div className="min-h-screen flex flex-col transition-colors duration-200 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       {/* Barra de Navegação Superior do SOC */}
-      <header className={`border-b sticky top-0 z-50 backdrop-blur-md transition-colors duration-200 ${
-        isDarkMode ? 'border-slate-800/80 bg-slate-900/80' : 'border-slate-300/80 bg-white/85'
-      }`}>
+      <header className="border-b sticky top-0 z-50 backdrop-blur-md transition-colors duration-200 border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-400 shadow-sm">
+            <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-500 dark:text-sky-400 shadow-sm">
               <Shield className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className={`text-base font-extrabold tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Email Header Analyzer
+                <h1 className="text-base font-extrabold tracking-wide text-slate-900 dark:text-white">
+                  BP Email Header Analyzer
                 </h1>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30">
                   SOC Edition
                 </span>
               </div>
-              <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Análise Forense e Detecção Avançada de Ameaças em Cabeçalhos RFC 5322
               </p>
             </div>
@@ -178,9 +176,7 @@ export const App: React.FC = () => {
 
           <div className="flex items-center gap-3">
             {/* Status do Motor */}
-            <div className={`hidden sm:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${
-              isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-200 border-slate-300 text-slate-700'
-            }`}>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>SOC Engine Operacional</span>
             </div>
@@ -189,11 +185,7 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`p-2 rounded-xl border transition-colors ${
-                isDarkMode
-                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-850'
-                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-200'
-              }`}
+              className="p-2 rounded-xl border transition-colors bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-800 shadow-sm"
               title={isDarkMode ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
             >
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -240,13 +232,14 @@ export const App: React.FC = () => {
         {analysis && (
           <section className="space-y-6">
             {/* Barra de Ações e Exportações */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-md">
+            {/* Barra de Ações e Exportações */}
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-sky-400" />
-                <h2 className="text-base font-bold text-white">
+                <Activity className="w-5 h-5 text-sky-500 dark:text-sky-400" />
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
                   Diagnóstico Forense Concluído
                 </h2>
-                <span className="text-xs font-mono text-slate-500 hidden sm:inline">
+                <span className="text-xs font-mono text-slate-400 dark:text-slate-500 hidden sm:inline">
                   (SHA-256: {analysis.raw_header_hash.substring(0, 10)}...)
                 </span>
               </div>
@@ -256,10 +249,10 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleCopyJson}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition-colors"
                   title="Copiar estrutura JSON da análise"
                 >
-                  {copiedJson ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {copiedJson ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
                   <span>{copiedJson ? 'Copiado!' : 'Copiar JSON'}</span>
                 </button>
 
@@ -267,10 +260,10 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleExportJson}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition-colors"
                   title="Baixar análise completa em arquivo JSON"
                 >
-                  <Code2 className="w-4 h-4 text-sky-400" />
+                  <Code2 className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                   <span>Baixar JSON</span>
                 </button>
 
@@ -279,7 +272,7 @@ export const App: React.FC = () => {
                   type="button"
                   onClick={handleExportPdf}
                   disabled={isExportingPdf}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white text-xs font-bold shadow-lg shadow-rose-900/30 transition-all disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white text-xs font-bold shadow-lg shadow-rose-900/20 transition-all disabled:opacity-50"
                   title="Gerar e exportar relatório técnico completo em PDF para SOC"
                 >
                   <FileDown className="w-4 h-4" />
@@ -289,7 +282,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Navegação por Abas */}
-            <div className="flex border-b border-slate-800 overflow-x-auto gap-2 pb-1 scrollbar-none">
+            <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto gap-2 pb-1 scrollbar-none">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -300,8 +293,8 @@ export const App: React.FC = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-medium text-xs whitespace-nowrap transition-all border-b-2 ${
                       isActive
-                        ? 'border-sky-500 text-sky-400 bg-slate-900/80 font-bold'
-                        : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                        ? 'border-sky-500 text-sky-600 dark:text-sky-400 bg-white dark:bg-slate-900/80 font-bold shadow-sm'
+                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/40'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -309,7 +302,9 @@ export const App: React.FC = () => {
                     {tab.count !== undefined && (
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                          isActive ? 'bg-sky-500/20 text-sky-300' : 'bg-slate-800 text-slate-400'
+                          isActive
+                            ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300'
+                            : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                         }`}
                       >
                         {tab.count}
@@ -335,46 +330,46 @@ export const App: React.FC = () => {
                       />
                     </div>
 
-                    <div className="md:col-span-2 p-6 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between shadow-lg">
+                    <div className="md:col-span-2 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
+                          <span className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">
                             Diagnóstico & Veredito Executivo
                           </span>
-                          <span className="text-xs font-mono text-slate-500">
+                          <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
                             Hash: {analysis.raw_header_hash.substring(0, 16)}
                           </span>
                         </div>
 
-                        <h3 className="text-xl font-bold text-white mb-3">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
                           {analysis.summary.verdict_text}
                         </h3>
 
-                        <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80 text-sm text-slate-300 leading-relaxed font-sans">
-                          <strong className="text-white block mb-1">Recomendação de Resposta a Incidentes:</strong>
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                          <strong className="text-slate-900 dark:text-white block mb-1">Recomendação de Resposta a Incidentes:</strong>
                           {analysis.summary.recommendation}
                         </div>
                       </div>
 
                       {/* Métricas Principais */}
-                      <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-800 text-center">
+                      <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-center">
                         <div>
-                          <span className="text-[10px] uppercase tracking-wider text-slate-500 block">Saltos de Rede</span>
-                          <span className="text-lg font-bold text-white mt-0.5 block">{analysis.summary.total_hops}</span>
+                          <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Saltos de Rede</span>
+                          <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5 block">{analysis.summary.total_hops}</span>
                         </div>
                         <div>
-                          <span className="text-[10px] uppercase tracking-wider text-slate-500 block">Achados</span>
-                          <span className="text-lg font-bold text-sky-400 mt-0.5 block">{analysis.findings.length}</span>
+                          <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Achados</span>
+                          <span className="text-lg font-bold text-sky-600 dark:text-sky-400 mt-0.5 block">{analysis.findings.length}</span>
                         </div>
                         <div>
-                          <span className="text-[10px] uppercase tracking-wider text-slate-500 block">SPF</span>
-                          <span className="text-lg font-bold uppercase mt-0.5 block text-slate-200">
+                          <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 block">SPF</span>
+                          <span className="text-lg font-bold uppercase mt-0.5 block text-slate-800 dark:text-slate-200">
                             {analysis.authentication.spf_verdict}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[10px] uppercase tracking-wider text-slate-500 block">DMARC</span>
-                          <span className="text-lg font-bold uppercase mt-0.5 block text-slate-200">
+                          <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 block">DMARC</span>
+                          <span className="text-lg font-bold uppercase mt-0.5 block text-slate-800 dark:text-slate-200">
                             {analysis.authentication.dmarc_verdict}
                           </span>
                         </div>
@@ -383,22 +378,22 @@ export const App: React.FC = () => {
                   </div>
 
                   {/* Lista Completa de Achados Técnicos (Findings) */}
-                  <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-lg space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                       <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-amber-400" />
-                        <h4 className="text-base font-bold text-white">
+                        <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white">
                           Evidências Forenses & Achados ({analysis.findings.length})
                         </h4>
                       </div>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
                         Total Ponderado: {analysis.findings.reduce((acc, f) => acc + f.points, 0)} pontos
                       </span>
                     </div>
 
                     {analysis.findings.length === 0 ? (
-                      <div className="p-8 text-center text-slate-500 italic">
-                        <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-400 mb-2" />
+                      <div className="p-8 text-center text-slate-400 dark:text-slate-500 italic">
+                        <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 dark:text-emerald-400 mb-2" />
                         Nenhuma anomalia ou evidência de fraude foi identificada neste cabeçalho.
                       </div>
                     ) : (
@@ -406,27 +401,27 @@ export const App: React.FC = () => {
                         {analysis.findings.map((f, idx) => (
                           <div
                             key={idx}
-                            className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-700 transition-colors"
+                            className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
                           >
                             <div className="space-y-1 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${getSeverityBadgeClass(f.severity)}`}>
                                   {f.severity}
                                 </span>
-                                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-semibold">
+                                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-slate-700 font-semibold">
                                   {f.category}
                                 </span>
-                                <span className="text-xs font-bold text-white">
+                                <span className="text-xs font-bold text-slate-900 dark:text-white">
                                   {f.title}
                                 </span>
                               </div>
-                              <p className="text-xs text-slate-300 leading-relaxed">
+                              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                 {f.description}
                               </p>
                             </div>
 
                             <div className="shrink-0 flex sm:flex-col items-end justify-between sm:justify-center">
-                              <span className="text-xs font-bold font-mono px-2.5 py-1 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                              <span className="text-xs font-bold font-mono px-2.5 py-1 rounded bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 dark:border-rose-500/30">
                                 +{f.points} pts
                               </span>
                             </div>
@@ -443,17 +438,17 @@ export const App: React.FC = () => {
                 <div className="space-y-6">
                   {/* Mapa Leaflet */}
                   <div>
-                    <h3 className="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-sky-400" />
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-300 mb-3 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-sky-500 dark:text-sky-400" />
                       Mapeamento Geográfico da Cadeia de MTAs
                     </h3>
-                    <HopsMap hops={analysis.hops} />
+                    <HopsMap hops={analysis.hops} isDarkMode={isDarkMode} />
                   </div>
 
                   {/* Linha do Tempo Cronológica */}
                   <div>
-                    <h3 className="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-sky-400" />
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-300 mb-3 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-sky-500 dark:text-sky-400" />
                       Cadeia Cronológica de Saltos (Received:)
                     </h3>
                     <HopsTimeline hops={analysis.hops} />
@@ -510,19 +505,19 @@ export const App: React.FC = () => {
 
         {/* Estado Inicial Vazio */}
         {!analysis && !isLoading && (
-          <div className="p-12 rounded-2xl border-2 border-dashed border-slate-800/80 bg-slate-900/30 text-center text-slate-500 space-y-3">
-            <Terminal className="w-12 h-12 mx-auto text-slate-600" />
-            <h3 className="text-base font-semibold text-slate-300">Pronto para Inspeção Forense</h3>
-            <p className="text-xs text-slate-500 max-w-lg mx-auto leading-relaxed">
-              Insira o cabeçalho completo de um e-mail no campo acima, arraste um arquivo <code className="text-slate-400">.eml</code> ou selecione uma das amostras pré-configuradas (Legítimo, Phishing, BEC, Botnet) para executar a desmontagem e análise automatizada.
+          <div className="p-12 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/30 text-center text-slate-500 space-y-3 shadow-sm">
+            <Terminal className="w-12 h-12 mx-auto text-slate-400 dark:text-slate-600" />
+            <h3 className="text-base font-semibold text-slate-800 dark:text-slate-300">Pronto para Inspeção Forense</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
+              Insira o cabeçalho completo de um e-mail no campo acima, arraste um arquivo <code className="text-slate-700 dark:text-slate-300 font-mono">.eml</code> ou selecione uma das amostras pré-configuradas (Legítimo, Phishing, BEC, Botnet) para executar a desmontagem e análise automatizada.
             </p>
           </div>
         )}
       </main>
 
       {/* Rodapé */}
-      <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 bg-slate-950/80 mt-auto">
-        <p>Email Header Analyzer — Plataforma Forense para Centros de Operações de Segurança (SOC)</p>
+      <footer className="border-t border-slate-200 dark:border-slate-800/80 py-6 text-center text-xs text-slate-500 bg-white dark:bg-slate-950/80 mt-auto">
+        <p>BP Email Header Analyzer — Plataforma Forense para Centros de Operações de Segurança (SOC)</p>
       </footer>
     </div>
   );
