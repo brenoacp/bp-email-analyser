@@ -4,8 +4,7 @@ import {
   EmailAnalysisResponse,
   SampleId,
 } from '../types/email';
-
-const API_BASE_URL = '';
+const API_BASE_URL = (import.meta.env.BASE_URL || '').replace(/\/$/, '');
 
 export class ApiError extends Error {
   status: number;

@@ -1,6 +1,9 @@
 # Stage 1: Build do Frontend com Node
 FROM node:20-alpine AS builder
 
+ARG VITE_BASE_PATH=/bp-email-analyser/
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
+
 WORKDIR /app
 
 COPY frontend/package*.json ./

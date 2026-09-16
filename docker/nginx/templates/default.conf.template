@@ -18,6 +18,15 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    # Redirecionamento e rewrite para o subcaminho /bp-email-analyser/
+    location = /bp-email-analyser {
+        return 301 /bp-email-analyser/;
+    }
+
+    location ^~ /bp-email-analyser/ {
+        rewrite ^/bp-email-analyser/(.*)$ /$1 last;
+    }
+
     # Cache de Assets Estáticos do Vite
     location /assets/ {
         expires 1y;
